@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Data;
-using System.Diagnostics.SymbolStore;
 using System.IO;
 
 namespace EnvelopeTracker
@@ -9,7 +7,8 @@ namespace EnvelopeTracker
     {
         #region VARIABLES
         public static string AppDirectory = Environment.GetEnvironmentVariable("onedriveconsumer") + "\\documents\\EnvelopeTracker\\";  //path to save and read from
-        public static string EnvSave = AppDirectory + "Envelopes.csv";  //save file location
+        public static string CSVSave = AppDirectory + "EnvelopeStatus.csv";  //envelope status save file 
+        public static string TextSave = AppDirectory + "Savings Report.txt";  //save text report
         public static bool[] IsFilled = new bool[101];  //envelope status 
         public static int FilledCount;  //number of envelopes filled
         #endregion
@@ -86,17 +85,77 @@ namespace EnvelopeTracker
             }
         }
 
-        static void SaveToFile()  //save status to file
+        static void SaveToCSV()  //save status to file
         {
             //writes file in csv format.  envelope amount, filled status true / false
             Directory.CreateDirectory(AppDirectory);  //make sure directory exists before writing
-            StreamWriter SW = new StreamWriter(EnvSave);    //open file for writing
+            StreamWriter SW = new StreamWriter(CSVSave);    //open file for writing
             
             for (int i = 1;i <101; i++)  //loop through all numbers 1-100
             {
                 SW.WriteLine(i + "," + IsFilled[i]);  //write to file, csv format
             }
             SW.Close();  //close file
+        }
+
+        static void SaveToText()
+        {
+            StreamWriter sw = new StreamWriter(TextSave);
+
+            //SAVE save full envelopes
+            int Printed = 0;  //print output in rows of 10
+            sw.WriteLine("FILLED ENVELOPES:  ");
+            for (int i = 1; i < 101; i++)  //loop IsFilled Array, True = filled
+            {
+                if (IsFilled[i] == true)
+                {
+                    sw.Write(i.ToString().PadLeft(3) + "  ");  //write values, 
+                    Printed++;  //increment items printed
+                    if (Printed % 10 == 0)  //Printed / 10 = 0 goto next row
+                    {
+                        Printed = 0;  //reset printed count
+                        sw.WriteLine();  //new line
+                    }
+                }
+            }
+
+            //save empty envelopes
+            Printed = 0;
+            sw.WriteLine("\n\nEMPTY ENVELOPES:");
+            for (int i = 1; i < 101; i++)
+            {
+                if (IsFilled[i] == false)
+                {
+                    sw.Write(i.ToString().PadLeft(3) + "  ");
+                    Printed++;
+                    if ((Printed % 10) == 0)
+                    {
+                        Printed = 0;
+                        sw.WriteLine();
+                    }
+                }
+            }
+
+            FilledCount = 0;  //clear variables before looping
+            double Unsaved, TotalSaved = 0;
+            double PercentSaved;
+            for (int i = 1; i < 101; i++)
+            {
+                if (IsFilled[i] == true)
+                {
+                    FilledCount++;  //add 1 to filled count
+                    TotalSaved += i;  //total money saved
+                }
+            }
+
+            Unsaved = 5050 - TotalSaved;  //money left to save
+            PercentSaved = TotalSaved / 5050 * 100;
+            sw.WriteLine("\n\nSTATISTICS:");  //write to screen 
+            sw.WriteLine("            Total Saved:  $" + TotalSaved.ToString("n2"));
+            sw.WriteLine("     Money Left to Save:  $" + Unsaved.ToString("n2"));
+            sw.WriteLine("       Percentage Saved:  " + PercentSaved.ToString("n2"));
+            sw.WriteLine("       Envelopes Filled:  " + FilledCount.ToString() + " of 100");
+            sw.Close();
         }
 
         static void GetStats(bool Show = false)  //show savings stats
@@ -137,13 +196,14 @@ namespace EnvelopeTracker
                 Console.WriteLine("X - Exit");
             }
 
-            GetStats(false);    //makes dure stats are up to date
+            GetStats(false);    //make aure stats are up to date
+            SaveToCSV();  //save status to csv file
+            SaveToText();  //save report to text file
             char MenuKey = WaitForKeyPress("");  //get 1 keypress, lowercase
                 
                 switch(MenuKey)  // run functions based on number 
                 {
                     case 'x':  //exit 
-                        SaveToFile(); 
                         Environment.Exit(0);  //exit app
                         break;
                     case 'c':  //envelope status
@@ -265,14 +325,14 @@ namespace EnvelopeTracker
 
         static void LoadFile()  //load file from disk into array
         {
-            if ( ! File.Exists(EnvSave) )  //if file does not exist, don't try to load
+            if ( ! File.Exists(CSVSave) )  //if file does not exist, don't try to load
             {
                 return;
             }
 
             string line; int EnvNumber; bool EnvStatus;  //holds complete line, number and status 
             StreamReader CsvRip = new StreamReader
-            (EnvSave);  //open a file
+            (CSVSave);  //open a file
 
             for (int i = 1; i<101; i++)
             {
