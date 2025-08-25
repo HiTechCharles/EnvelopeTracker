@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace EnvelopeTracker
@@ -19,7 +20,7 @@ namespace EnvelopeTracker
             Console.ForegroundColor = ConsoleColor.White;  //text color for console
 
             LoadFile();  //load envelope file and store it in IsFilled[]
-            
+
             while (true)  //makes sure menu is shown after functions exit
             {
                 MainMenu(true);  //true means show the options
@@ -252,7 +253,7 @@ namespace EnvelopeTracker
                 {
                     IsFilled[EnvChosen] = true;  //set chosen envelope to true
                     Console.WriteLine("Ok, Envelope #" + EnvChosen + " has been marked as filled.");
-                    Console.WriteLine("Be sure to put $" + EnvChosen + " in the appropriate place.");
+                    PrintBillBreakdown(EnvChosen);
                     MainMenu(true);
                     return;
                 }
@@ -343,6 +344,28 @@ namespace EnvelopeTracker
                 IsFilled[EnvNumber] = EnvStatus;  //store results of current line
             }
             CsvRip.Close();
+        }
+
+        static void PrintBillBreakdown(int amount)
+        {
+            int[] denominations = new int[] { 100, 50, 20, 10, 5, 1 };
+            Dictionary<int, int> billCounts = new Dictionary<int, int>();
+
+            foreach (int bill in denominations)
+            {
+                billCounts[bill] = amount / bill;
+                amount = amount % bill;
+            }
+
+            Console.WriteLine("\nYou will need the following bills for this envelope:");
+
+            foreach (KeyValuePair<int, int> kvp in billCounts)
+            {
+                if (kvp.Value > 0)  
+                {
+                    Console.WriteLine($"     ${kvp.Key,-3}: {kvp.Value,2} {(kvp.Value == 1 ? "bill" : "bills")}");
+                }
+            }
         }
 
         static char WaitForKeyPress(string prompt)  //get a keypress and store it
