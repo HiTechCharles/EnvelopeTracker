@@ -6,8 +6,8 @@ using System.Speech;
 
 namespace EnvelopeTracker
 {
-internal class Program
-{
+    internal class Program
+    {
     #region VARIABLES
     public static string AppDirectory = Environment.GetEnvironmentVariable("onedriveconsumer") + "\\documents\\EnvelopeTracker\\";  //path to save and read from
     public static string CSVSave = AppDirectory + "EnvelopeStatus.csv";  //envelope status save file 
@@ -18,11 +18,11 @@ internal class Program
         static readonly SpeechSynthesizer ESpeak = new SpeechSynthesizer();
         #endregion
 
-        static void Main()  //entrypoint of program
+    static void Main()  //entry point of program
     {
         Console.Title = "100 Envelopes Savings Tracker";  //console window title
         Console.ForegroundColor = ConsoleColor.White;  //text color for console
-            ESpeak.Rate = 4;
+            ESpeak.Rate = 4;  //speech rate, kind of fast
 
         LoadFile();  //load envelope file and store it in IsFilled[]
 
@@ -45,10 +45,6 @@ internal class Program
         }
 
 
-        if (TextToSpeech)
-            {
-                Speak("Empty and full envelopes are not read to reduce amount of speech.");
-            }
 
         Console.WriteLine("\n100 Envelope Savings Challenge - Envelope Status\n");  //menu header
         ShowFilled();  //show filled envelopes 
@@ -223,6 +219,7 @@ internal class Program
         SaveToText();  //save report to text file
         char MenuKey = WaitForKeyPress("");  //get 1 keypress, lowercase
 
+        ESpeak.SpeakAsyncCancelAll();
         switch (MenuKey)  // run functions based on letter
         {
             case 'x':  //exit 
@@ -332,8 +329,6 @@ internal class Program
 
     static void Speak(string prompt)
     {
-
-
             if (TextToSpeech)
             {
                 ESpeak.SpeakAsync(prompt);
