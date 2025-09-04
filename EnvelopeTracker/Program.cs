@@ -335,7 +335,7 @@ namespace EnvelopeTracker
                 }
                 
         }
-
+        
         static int GetNumber(String Prompt, int Low, int High)  //get a number from thee user
         {
             string line; int rtn;
@@ -415,5 +415,6 @@ namespace EnvelopeTracker
             ConsoleKeyInfo keyInfo = Console.ReadKey(true); // Prevents the key from being displayed
             return keyInfo.KeyChar;
         }
+
     }  //end class helps me keep all the braces straight
-}  //end namespace
+}  //end namespace  
