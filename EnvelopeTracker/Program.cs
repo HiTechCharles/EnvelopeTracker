@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Speech.Synthesis;
-using System.Speech;
 
 namespace EnvelopeTracker
 {
@@ -14,26 +13,12 @@ namespace EnvelopeTracker
         public static string TextSave = AppDirectory + "Savings Report.txt";  //save text report
         public static bool[] IsFilled = new bool[101];  //envelope status 
         public static int FilledCount;  //number of envelopes filled
-            public static bool TextToSpeech;  //check if speech is on
-            static readonly SpeechSynthesizer ESpeak = new SpeechSynthesizer();
-            #endregion
+        public static bool TextToSpeech;  //check if speech is on
+        static readonly SpeechSynthesizer ESpeak = new SpeechSynthesizer();  //allows text to speech
+        #endregion
 
-        static void Main()  //entry point of program
+        static void CheckEnvelopes()  //prints out empty and full envelopes 
         {
-            Console.Title = "100 Envelopes Savings Tracker";  //console window title
-            Console.ForegroundColor = ConsoleColor.White;  //text color for console
-                ESpeak.Rate = 4;  //speech rate, kind of fast
-
-            LoadFile();  //load envelope file and store it in IsFilled[]
-
-            while (true)  //makes sure menu is shown after functions exit
-            {
-                MainMenu(true);  //true means show the options
-            }
-        }
-
-        static void CheckEnvelopes()  //prints out empty and full envelopes
-            {
             switch (FilledCount)  //based on number of envelopes filled,
             {
                 case 0:  //none
@@ -44,136 +29,49 @@ namespace EnvelopeTracker
                     return;  //exit function
             }
 
-
-
             Console.WriteLine("\n100 Envelope Savings Challenge - Envelope Status\n");  //menu header
             ShowFilled();  //show filled envelopes 
             ShowEmpty();   //display empty ones
             Print();
         }
 
-        static void ShowFilled()  //show filled envelopes
+        static int GetNumber(String Prompt, int Low, int High)  //get a number from thee user 
         {
-            int Printed = 0;  //print output in rows of 10
-            Console.WriteLine("FILLED ENVELOPES:  ");
-            for (int i = 1; i < 101; i++)  //loop IsFilled Array, True = filled
+            string line; int rtn;  //holds read line and converted value 
+            while (true)  //loop until valid input
             {
-                if (IsFilled[i] == true)
-                {
-                    Console.Write(i.ToString().PadLeft(3) + "  ");  //write values, 
+                Print(Prompt, true);  //display prompt message before getting input
+                line = Console.ReadLine();  //store input
 
-                    Printed++;  //increment items printed
-                    if (Printed % 10 == 0)  //Printed / 10 = 0 goto next row
-                    {
-                        Printed = 0;  //reset printed count
-                        Print();  //new line
-                    }
+                if (int.TryParse(line, out rtn))  //if string can convert to int
+                {
+                    // Successfully parsed, exit the loop
+                    break;
+                }
+                else
+                {
+                    // Invalid input, prompt the user again
+                    System.Media.SystemSounds.Asterisk.Play();  //play a sound 
                 }
             }
+
+            if (rtn < Low || rtn > High)  //bounds check
+            {
+                System.Media.SystemSounds.Asterisk.Play();
+                GetNumber(Prompt, Low, High);
+            }
+
+            return rtn;  //return number, all checks passed
         }
 
-        static void ShowEmpty()  //show empty envelopes  all other code is identical tofilled  function 
-        {
-            int Printed = 0;
-            Console.WriteLine("\n\nEMPTY ENVELOPES:");
-
-            for (int i = 1; i < 101; i++)
-            {
-                if (IsFilled[i] == false)
-                {
-                    Console.Write(i.ToString().PadLeft(3) + "  ");
-
-                    Printed++;
-                    if ((Printed % 10) == 0)
-                    {
-                        Printed = 0;
-                        Print();
-                    }
-                }
-            }
-        }
-
-        static void SaveToCSV()  //save status to file
-        {
-            //writes file in csv format.  envelope amount, filled status true / false
-            Directory.CreateDirectory(AppDirectory);  //make sure directory exists before writing
-            StreamWriter SW = new StreamWriter(CSVSave);    //open file for writing
-
-            for (int i = 1; i < 101; i++)  //loop through all numbers 1-100
-            {
-                SW.WriteLine(i + "," + IsFilled[i]);  //write to file, csv format
-            }
-            SW.Close();  //close file
-        }
-
-        static void SaveToText()
-        {
-            StreamWriter sw = new StreamWriter(TextSave);
-
-            //SAVE save full envelopes
-            int Printed = 0;  //print output in rows of 10
-            sw.WriteLine("FILLED ENVELOPES:  ");
-            for (int i = 1; i < 101; i++)  //loop IsFilled Array, True = filled
-            {
-                if (IsFilled[i] == true)
-                {
-                    sw.Write(i.ToString().PadLeft(3) + "  ");  //write values, 
-                    Printed++;  //increment items printed
-                    if (Printed % 10 == 0)  //Printed / 10 = 0 goto next row
-                    {
-                        Printed = 0;  //reset printed count
-                        sw.WriteLine();  //new line
-                    }
-                }
-            }
-
-            //save empty envelopes
-            Printed = 0;
-            sw.WriteLine("\n\nEMPTY ENVELOPES:");
-            for (int i = 1; i < 101; i++)
-            {
-                if (IsFilled[i] == false)
-                {
-                    sw.Write(i.ToString().PadLeft(3) + "  ");
-                    Printed++;
-                    if ((Printed % 10) == 0)
-                    {
-                        Printed = 0;
-                        sw.WriteLine();
-                    }
-                }
-            }
-
-            FilledCount = 0;  //clear variables before looping
-            double Unsaved, TotalSaved = 0;
-            double PercentSaved;
-            for (int i = 1; i < 101; i++)
-            {
-                if (IsFilled[i] == true)
-                {
-                    FilledCount++;  //add 1 to filled count
-                    TotalSaved += i;  //total money saved
-                }
-            }
-
-            Unsaved = 5050 - TotalSaved;  //money left to save
-            PercentSaved = TotalSaved / 5050 * 100;
-            sw.WriteLine("\n\nSTATISTICS:");  //write to screen 
-            sw.WriteLine("            Total Saved:  $" + TotalSaved.ToString("n2"));
-            sw.WriteLine("     Money Left to Save:  $" + Unsaved.ToString("n2"));
-            sw.WriteLine("       Percentage Saved:  " + PercentSaved.ToString("n2"));
-            sw.WriteLine("       Envelopes Filled:  " + FilledCount.ToString() + " of 100");
-            sw.Close();
-        }
-
-        static void GetStats(bool Show = false)  //show savings stats
+        static void GetStats(bool Show = false)  //show savings stats 
         {
             FilledCount = 0;  //clear variables before looping
-            double Unsaved, TotalSaved = 0;
-            double PercentSaved;
+            double Unsaved, TotalSaved = 0;  //can't increment if value not initialized to zero
+            double PercentSaved;  //percentage of money saved
             for (int i = 1; i < 101; i++)
             {
-                if (IsFilled[i] == true)
+                if (IsFilled[i] == true)  //check each envelope, look for filled ones
                 {
                     FilledCount++;  //add 1 to filled count
                     TotalSaved += i;  //total money saved
@@ -185,10 +83,46 @@ namespace EnvelopeTracker
             if (Show)  //if stats are to be shown, not just calculated
             {
                 Print("\nSTATISTICS:");  //write to screen 
-                Print("            Total Saved:  $" + TotalSaved.ToString("n2"));
+                Print("            Total Saved:  $" + TotalSaved.ToString("n2"));  
                 Print("     Money Left to Save:  $" + Unsaved.ToString("n2"));
                 Print("       Percentage Saved:  " + PercentSaved.ToString("n2"));
                 Print("       Envelopes Filled:  " + FilledCount.ToString() + " of 100");
+            }
+        }
+
+        static void LoadFile()  //load file from disk into array
+        {
+            if (!File.Exists(CSVSave))  //if file does not exist, don't try to load
+            {
+                return;
+            }
+
+            string line; int EnvNumber; bool EnvStatus;  //holds complete line, number and status 
+            StreamReader CsvRip = new StreamReader
+            (CSVSave);  //open a file
+
+            for (int i = 1; i < 101; i++)  //read 100 values 
+            {
+                line = CsvRip.ReadLine();  //read a line from file
+                string[] subs = line.Split(',');  //split string by ,
+                EnvNumber = Convert.ToInt16(subs[0]);  //convert to int, sub zero, johnny cage, raiden
+                EnvStatus = Convert.ToBoolean(subs[1]); //get number and status
+                IsFilled[EnvNumber] = EnvStatus;  //store results of current line
+            }
+            CsvRip.Close();
+        }
+
+        static void Main()  //entry point of program
+        {
+            Console.Title = "100 Envelopes Savings Tracker";  //console window title
+            Console.ForegroundColor = ConsoleColor.White;  //text color for console
+            ESpeak.Rate = 4;  //speech rate, medium speed
+
+            LoadFile();  //load envelope file and store it in IsFilled[] array
+
+            while (true)  //makes sure menu is shown after functions exit
+            {
+                MainMenu(true);  //true means show the options
             }
         }
 
@@ -197,14 +131,14 @@ namespace EnvelopeTracker
             if (Show)  //if menu options are desired
             {
                 Print("\n100 Envelope Savings Challenge - Main Menu\n");
-                Print("C - Check Envelope Status");
+                Print("C - Check Status");
                 Print("M - Mark as Filled");
-                Print("R - Remove money from an envelope");
+                Print("R - Remove money");
                 Print("S - Savings Stats");
-                
-                if ( TextToSpeech)
+
+                if (TextToSpeech)  //if text to speech true
                 {
-                    Print("T - Toggle Text to Speech, currently ON");
+                    Print("T - Toggle Text to Speech, currently ON");  //print appropriate menu item based on bool
                 }
                 else
                 {
@@ -214,12 +148,12 @@ namespace EnvelopeTracker
                 Print("X - Exit");
             }
 
-            GetStats(false);    //make aure stats are up to date
+            GetStats(false);    //make sure stats are up to date
             SaveToCSV();  //save status to csv file
             SaveToText();  //save report to text file
             char MenuKey = WaitForKeyPress("");  //get 1 keypress, lowercase
 
-            ESpeak.SpeakAsyncCancelAll();
+            ESpeak.SpeakAsyncCancelAll();  //stop speech before next function starts so speech is not behind 
             switch (MenuKey)  // run functions based on letter
             {
                 case 'x':  //exit 
@@ -238,7 +172,7 @@ namespace EnvelopeTracker
                     GetStats(true);  //show savings stats
                     break;
                 case 't':
-                    TextToSpeech = !TextToSpeech;
+                    TextToSpeech = !TextToSpeech;  //switch to opposite value t=f, f=t
                     break;
                 default:  //all other input 
                     MainMenu(false);  //try again, no options display 
@@ -280,20 +214,177 @@ namespace EnvelopeTracker
             }
         }
 
-        static void UnMarkFilled(bool ShowHeader = false)  //unmark envelope / remove money
+        static void Print(string prompt = "", bool SameLine = false)
         {
-            int EnvChosen;
-            if (ShowHeader == false)
+            if (SameLine == true)  //does not end the line, keeps cursor in ppace
+            {
+                Console.Write(prompt);
+            }
+            else
+            {
+                Console.WriteLine(prompt);
+            }
+            Speak(prompt);  //if speech is on, speak prompt message
+        }
+
+        static void PrintBillBreakdown(int amount)  //shows bills needed for a particular amount 
+        {
+            int[] denominations = new int[] { 100, 50, 20, 10, 5, 1 };
+            Dictionary<int, int> billCounts = new Dictionary<int, int>();
+
+            foreach (int bill in denominations)
+            {
+                billCounts[bill] = amount / bill;
+                amount %= bill;
+            }
+
+            Print("\nYou will need the following bills:");
+
+            foreach (KeyValuePair<int, int> kvp in billCounts)
+            {
+                if (kvp.Value > 0)
+                {
+                    Print($"     ${kvp.Key,-3}: {kvp.Value,2} {(kvp.Value == 1 ? "bill" : "bills")}");
+                }
+            }
+        }
+
+        static void SaveToCSV()  //save status to file, loadfile function read this
+        {
+            //writes file in csv format.  envelope amount, filled status true / false
+            Directory.CreateDirectory(AppDirectory);  //make sure directory exists before writing
+            StreamWriter CSVWrite = new StreamWriter(CSVSave);    //open file for writing
+
+            for (int i = 1; i < 101; i++)  //loop through all numbers 1-100
+            {
+                CSVWrite.WriteLine(i + "," + IsFilled[i]);  //write to file, csv format
+            }
+            CSVWrite.Close();  //close file
+        }
+
+        static void SaveToText()
+        {
+            StreamWriter  TextWrite = new StreamWriter(TextSave);
+
+            //SAVE save full envelopes
+            int Printed = 0;  //print output in rows of 10
+            TextWrite.WriteLine("FILLED ENVELOPES:  ");
+            for (int i = 1; i < 101; i++)  //loop IsFilled Array, True = filled
+            {
+                if (IsFilled[i] == true)
+                {
+                    TextWrite.Write(i.ToString().PadLeft(3) + "  ");  //write values, 
+                    Printed++;  //increment items printed
+                    if (Printed % 10 == 0)  //Printed / 10 = 0 goto next row
+                    {
+                        Printed = 0;  //reset printed count
+                        TextWrite.WriteLine();  //new line
+                    }
+                }
+            }
+
+            //save empty envelopes
+            Printed = 0;
+            TextWrite.WriteLine("\n\nEMPTY ENVELOPES:");
+            for (int i = 1; i < 101; i++)
+            {
+                if (IsFilled[i] == false)
+                {
+                    TextWrite.Write(i.ToString().PadLeft(3) + "  ");
+                    Printed++;
+                    if ((Printed % 10) == 0)
+                    {
+                        Printed = 0;
+                        TextWrite.WriteLine();
+                    }
+                }
+            }
+
+            FilledCount = 0;  //clear variables before looping
+            double Unsaved, TotalSaved = 0;
+            double PercentSaved;
+            for (int i = 1; i < 101; i++)
+            {
+                if (IsFilled[i] == true)
+                {
+                    FilledCount++;  //add 1 to filled count
+                    TotalSaved += i;  //total money saved
+                }
+            }
+
+            Unsaved = 5050 - TotalSaved;  //money left to save
+            PercentSaved = TotalSaved / 5050 * 100;
+            TextWrite.WriteLine("\n\nSTATISTICS:");  //write to screen 
+            TextWrite.WriteLine("            Total Saved:  $" + TotalSaved.ToString("n2"));
+            TextWrite.WriteLine("     Money Left to Save:  $" + Unsaved.ToString("n2"));
+            TextWrite.WriteLine("       Percentage Saved:  " + PercentSaved.ToString("n2"));
+            TextWrite.WriteLine("       Envelopes Filled:  " + FilledCount.ToString() + " of 100");
+            TextWrite.Close();
+        }
+
+        static void ShowEmpty()  //show empty envelopes  all other code is identical tofilled  function 
+        {
+            int Printed = 0;  //print numbers in groups of 10
+            Console.WriteLine("\n\nEMPTY ENVELOPES:");
+
+            for (int i = 1; i < 101; i++)
+            {
+                if (IsFilled[i] == false)
+                {
+                    Console.Write(i.ToString().PadLeft(3) + "  ");
+
+                    Printed++;
+                    if ((Printed % 10) == 0)
+                    {
+                        Printed = 0;
+                        Print();
+                    }
+                }
+            }
+        }
+
+        static void ShowFilled()  //show filled envelopes
+        {
+            int Printed = 0;  //print output in rows of 10
+            Console.WriteLine("FILLED ENVELOPES:  ");
+            for (int i = 1; i < 101; i++)  //loop IsFilled Array, True = filled
+            {
+                if (IsFilled[i] == true)
+                {
+                    Console.Write(i.ToString().PadLeft(3) + "  ");  //write values, 
+
+                    Printed++;  //increment items printed
+                    if (Printed % 10 == 0)  //Printed / 10 = 0 goto next row
+                    {
+                        Printed = 0;  //reset printed count
+                        Print();  //new line
+                    }
+                }
+            }
+        }
+
+        static void Speak(string prompt)  //speak a string if TTS on 
+        {
+            if (TextToSpeech)  //if speech is on
+            {
+                ESpeak.SpeakAsync(prompt);
+            }
+        }
+
+        static void UnMarkFilled(bool ShowHeader = false)  //unmark envelope / remove money 
+        {
+            int EnvChosen;  //chosen envelope 
+            if (ShowHeader == false)  //only show header the first time the function loads
             {
                 Print("\n100 Envelope Savings Challenge - Remove Money From and Envelope\n");
                 ShowFilled();
             }
 
-            while (true)
+            while (true)  //break loop when valid input detected
             {
                 EnvChosen = GetNumber("\n\nChooes an envolope from 1 to 100:  ", 0, 100);
 
-                if (EnvChosen == 0)
+                if (EnvChosen == 0)  //main menu
                 {
                     return;
                 }
@@ -314,107 +405,13 @@ namespace EnvelopeTracker
             }
         }
 
-        static void Print(string prompt = "", bool SameLine = false)
-        {
-            if ( SameLine == true)
-            {
-                Console.Write(prompt);
-            }
-            else
-            { 
-                Console.WriteLine(prompt); 
-            }
-            Speak(prompt);
-        }
-
-        static void Speak(string prompt)
-        {
-                if (TextToSpeech)
-                {
-                    ESpeak.SpeakAsync(prompt);
-                }
-                
-        }
-        
-        static int GetNumber(String Prompt, int Low, int High)  //get a number from thee user
-        {
-            string line; int rtn;
-            while (true)  //loop until valid input
-            {
-                Print(Prompt, true);  //display prompt message before getting input
-                line = Console.ReadLine();  //store input
-
-                if (int.TryParse(line, out rtn))  //if string can convert to int
-                {
-                    // Successfully parsed, exit the loop
-                    break;
-                }
-                else
-                {
-                    // Invalid input, prompt the user again
-                    System.Media.SystemSounds.Asterisk.Play();  //play a sound 
-                }
-            }
-
-            if (rtn < Low || rtn > High)  //bounds check
-            {
-                System.Media.SystemSounds.Asterisk.Play();
-                GetNumber(Prompt, Low, High);
-            }
-
-            return rtn;  //return number, all checks passed
-        }
-
-        static void LoadFile()  //load file from disk into array
-        {
-            if (!File.Exists(CSVSave))  //if file does not exist, don't try to load
-            {
-                return;
-            }
-
-            string line; int EnvNumber; bool EnvStatus;  //holds complete line, number and status 
-            StreamReader CsvRip = new StreamReader
-            (CSVSave);  //open a file
-
-            for (int i = 1; i < 101; i++)
-            {
-                line = CsvRip.ReadLine();  //read a line from file
-                string[] subs = line.Split(',');  //split string by ,
-                EnvNumber = Convert.ToInt16(subs[0]);  //sub zero, johnny cage, raiden
-                EnvStatus = Convert.ToBoolean(subs[1]); //get number and status
-                IsFilled[EnvNumber] = EnvStatus;  //store results of current line
-            }
-            CsvRip.Close();
-        }
-
-        static void PrintBillBreakdown(int amount)
-        {
-            int[] denominations = new int[] { 100, 50, 20, 10, 5, 1 };
-            Dictionary<int, int> billCounts = new Dictionary<int, int>();
-
-            foreach (int bill in denominations)
-            {
-                billCounts[bill] = amount / bill;
-                amount %= bill;
-            }
-
-            Print("\nYou will need the following bills for this envelope:");
-
-            foreach (KeyValuePair<int, int> kvp in billCounts)
-            {
-                if (kvp.Value > 0)
-                {
-                    Print($"     ${kvp.Key,-3}: {kvp.Value,2} {(kvp.Value == 1 ? "bill" : "bills")}");
-                }
-            }
-        }
-
         static char WaitForKeyPress(string prompt)  //get a keypress and store it
         {
             Print(prompt);
             ConsoleKeyInfo keyInfo = Console.ReadKey(true); // Prevents the key from being displayed
             return keyInfo.KeyChar;
         }
+
 
     }  //end class helps me keep all the braces straight
 }  //end namespace  
